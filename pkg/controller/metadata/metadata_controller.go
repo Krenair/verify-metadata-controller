@@ -167,6 +167,9 @@ func (r *ReconcileMetadata) getCACerts(ctx context.Context, name, namespace stri
 }
 
 func (r *ReconcileMetadata) generateMetadataSecretData(instance *verifyv1beta1.Metadata, metadataSigningSecret *corev1.Secret, ca *verifyv1beta1.CertificateAuthoritySpec) (map[string][]byte, error) {
+
+	// todo check either cert present
+
 	if metadataSigningSecret == nil {
 		return nil, fmt.Errorf("metadataSigningSecret is required")
 	}
@@ -214,12 +217,19 @@ func (r *ReconcileMetadata) generateMetadataSecretData(instance *verifyv1beta1.M
 	}
 	metadataCATruststorePassword := truststorePassword
 
+	samlSigningKeyLabel := fmt.Sprintf("%s-%s-saml", instance.ObjectMeta.Namespace, instance.ObjectMeta.Name)
+
+
+
+	if &instance.Spec.SAMLSigningCertificate != nil {
+
+	}
+
 	// generate samlSigningCert and key
 	samlSigningCreds, err := hsm.GetCredentials()
 	if err != nil {
 		return nil, err
 	}
-	samlSigningKeyLabel := fmt.Sprintf("%s-%s-saml", instance.ObjectMeta.Namespace, instance.ObjectMeta.Name)
 	_, err = r.hsm.FindOrCreateRSAKeyPair(samlSigningKeyLabel, samlSigningCreds)
 	if err != nil {
 		return nil, fmt.Errorf("findOrCreateRSAKeyPair(%s): %s", samlSigningKeyLabel, err)
@@ -236,6 +246,9 @@ func (r *ReconcileMetadata) generateMetadataSecretData(instance *verifyv1beta1.M
 	if err != nil {
 		return nil, fmt.Errorf("CreateChainedCert(%s): %s", samlSigningKeyLabel, err)
 	}
+
+
+
 	samlSigningTruststore, err := generateTruststore(samlSigningCert, samlSigningKeyLabel, truststorePassword)
 	if err != nil {
 		return nil, err
@@ -245,6 +258,7 @@ func (r *ReconcileMetadata) generateMetadataSecretData(instance *verifyv1beta1.M
 	metadataRequest := hsm.GenerateMetadataRequest{
 		MetadataSigningCert:     metadataSigningCert,
 		SAMLSigningCert:         samlSigningCert,
+		SAMLEncryptionCert:      samlSigningCert,
 		MetadataSigningKeyLabel: string(metadataSigningKeyLabel),
 		SamlSigningKeyLabel:     string(samlSigningKeyLabel),
 		HSMCreds: hsm.Credentials{

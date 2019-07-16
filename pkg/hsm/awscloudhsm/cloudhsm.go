@@ -116,8 +116,9 @@ func (c *Client) GenerateAndSignMetadata(request hsm.GenerateMetadataRequest) (s
 		return nil, err
 	}
 	defer os.RemoveAll(tmpDir)
-	tmpMetadataSigningCertPath := filepath.Join(tmpDir, "saml-cert.pem")
-	tmpSAMLSigningCertPath := filepath.Join(tmpDir, "metadata-cert.pem")
+	tmpMetadataSigningCertPath := filepath.Join(tmpDir, "metadata-cert.pem")
+	tmpSAMLSigningCertPath := filepath.Join(tmpDir, "saml-signing-cert.pem")
+	tmpSAMLEncryptionCertPath := filepath.Join(tmpDir, "saml-encryption-cert.pem")
 	tmpMetadataOutputPath := filepath.Join(tmpDir, "metadata.xml")
 
 	if err := ioutil.WriteFile(tmpMetadataSigningCertPath, request.MetadataSigningCert, 0644); err != nil {
@@ -139,6 +140,7 @@ func (c *Client) GenerateAndSignMetadata(request hsm.GenerateMetadataRequest) (s
 		request.Type,
 		specFileName,
 		tmpSAMLSigningCertPath,
+		tmpSAMLEncryptionCertPath,
 		tmpMetadataSigningCertPath,
 		"--output", tmpMetadataOutputPath,
 		"--algorithm", "rsa",

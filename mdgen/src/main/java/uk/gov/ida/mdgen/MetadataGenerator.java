@@ -94,6 +94,9 @@ public class MetadataGenerator implements Callable<Void> {
     @CommandLine.Option(names = "--hsm-metadata-signing-label", description = "HSM Metadata key label")
     private String hsmMetadataKeyLabel = "private_key";
 
+    @CommandLine.Option(names = "--saml-encryption-cert", description = "todo")
+    private File samlEncryptionCertFile;
+
     public static void main(String[] args) throws InitializationException {
         InitializationService.initialize();
         CommandLine.call(new MetadataGenerator(), args);
@@ -102,6 +105,7 @@ public class MetadataGenerator implements Callable<Void> {
     @Override
     public Void call() throws Exception {
         X509Certificate samlSigningCert = X509Support.decodeCertificate(samlSigningCertFile);
+        X509Certificate samlEncCert = X509Support.decodeCertificate(samlEncryptionCertFile);
         X509Certificate metadataSigningCert = X509Support.decodeCertificate(metadataSigningCertFile);
 
         if (signingAlgo == SigningAlgoType.rsapss) {
