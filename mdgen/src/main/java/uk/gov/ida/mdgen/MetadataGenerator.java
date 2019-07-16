@@ -94,7 +94,7 @@ public class MetadataGenerator implements Callable<Void> {
     @CommandLine.Option(names = "--hsm-metadata-signing-label", description = "HSM Metadata key label")
     private String hsmMetadataKeyLabel = "private_key";
 
-    @CommandLine.Option(names = "--saml-encryption-cert", description = "todo")
+    @CommandLine.Option(names = "--saml-encryption-cert", description = "Public X509 cert for metadata encryption if required")
     private File samlEncryptionCertFile;
 
     public static void main(String[] args) throws InitializationException {

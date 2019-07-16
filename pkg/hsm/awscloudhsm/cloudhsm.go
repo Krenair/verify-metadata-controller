@@ -129,23 +129,28 @@ func (c *Client) GenerateAndSignMetadata(request hsm.GenerateMetadataRequest) (s
 		return nil, err
 	}
 
+	if err := ioutil.WriteFile(tmpSAMLEncryptionCertPath, request.SAMLEncryptionCert, 0644); err != nil {
+		return nil, err
+	}
+
 	log.Info("mdgen",
 		"type", request.Type,
 		"input", specFileName,
 		"output", tmpMetadataOutputPath,
 		"metadataSigningKeyLabel", request.MetadataSigningKeyLabel,
 		"samlSigningKeyLabel", request.SamlSigningKeyLabel,
+		"samlEncryptionCert", request.SAMLEncryptionCert,
 	)
 	cmd := exec.Command("/mdgen/build/install/mdgen/bin/mdgen",
 		request.Type,
 		specFileName,
 		tmpSAMLSigningCertPath,
-		tmpSAMLEncryptionCertPath,
 		tmpMetadataSigningCertPath,
 		"--output", tmpMetadataOutputPath,
 		"--algorithm", "rsa",
 		"--hsm-metadata-signing-label", request.MetadataSigningKeyLabel,
 		"--hsm-saml-signing-label", request.SamlSigningKeyLabel,
+		"--saml-encryption-cert", tmpSAMLEncryptionCertPath,
 	)
 	cmd.Env = append(os.Environ(),
 		fmt.Sprintf("HSM_USER=%s", request.HSMCreds.User),
@@ -157,18 +162,18 @@ func (c *Client) GenerateAndSignMetadata(request hsm.GenerateMetadataRequest) (s
 		return nil, fmt.Errorf("failed to execute mdgen: %s", out)
 	}
 
-	b, err := ioutil.ReadFile(tmpMetadataOutputPath)
+	metadata, err := ioutil.ReadFile(tmpMetadataOutputPath)
 	if err != nil {
 		return nil, err
 	}
-	if len(b) == 0 {
+	if len(metadata) == 0 {
 		return nil, fmt.Errorf("no metadata generated from mdgen: %s", out)
 	}
 
 	log.Info("mdgen-done",
-		"metadata", string(b),
+		"metadata", string(metadata),
 	)
-	return b, nil
+	return metadata, nil
 }
 
 func createGeneratorFile(data hsm.MetadataRequestData) (fileName string, err error) {
