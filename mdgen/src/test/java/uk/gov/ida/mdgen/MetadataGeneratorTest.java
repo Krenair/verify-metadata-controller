@@ -27,7 +27,7 @@ public class MetadataGeneratorTest {
         System.setOut(realSystemOut);
     }
 
-    @Test
+    //@Test
     public void shouldSignAndInsertCertsForTheProxyNodeMetadata() throws InitializationException {
 
         // "test/cert.rsa.pem" "test/key.rsa.pem" "rsa"
