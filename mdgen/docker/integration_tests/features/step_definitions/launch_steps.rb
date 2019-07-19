@@ -1,23 +1,30 @@
-Given("the java app exists") do
-  # pending # Write code here that turns the phrase above into concrete actions
-  # /integration_tests
+AfterConfiguration() do
   system('rm -fr mdgen')
   system('unzip ../mdgen.zip')
-  assert File.file?("mdgen/bin/mdgen")
+end
+
+Given("the java app exists") do
+  expect(File.file?("mdgen/bin/mdgen")).to be true
+end
+
+Given("the login credentials exist") do
+  expect(ENV.has_key? "HSM_USER").to be true
+  expect(ENV.has_key? "HSM_PASSWORD").to be true
 end
 
 When("I run the java executable with no parameters") do
-  # pending # Write code here that turns the phrase above into concrete actions
   @last_output = `mdgen/bin/mdgen 2>&1`
-  # puts ("FFFFOOOOOOOOOO" + @last_output)
-  # proxy ../proxy.yaml ../test/key.rsa.pem test/key.rsa.pem rsa
 end
 
 When("I run the java executable with some appropriate parameters") do
-  @last_output = `java -classpath '/opt/cloudhsm/java/*:mdgen/lib/*' uk.gov.ida.mdgen.MetadataGenerator proxy ../test/proxy.yml ../test/cert.rsa.pem ../test/cert.rsa.pem --algorithm rsa 2>&1`
+  @last_output = run_app("proxy", "rsa")
 end
 
 Then("I see that the application complains about missing parameters") do
-  puts("HERE IS THE OUTPUT: " + @last_output)
-  assert(@last_output.include? "required parameters")
+  expect(@last_output).to include "required parameters"
+end
+
+private
+def run_app(node_type, algorithm)
+  `java -classpath '/opt/cloudhsm/java/*:mdgen/lib/*' uk.gov.ida.mdgen.MetadataGenerator #{node_type} ../test/#{node_type}.yml ../test/cert.#{algorithm}.pem ../test/cert.#{algorithm}.pem --algorithm #{algorithm} 2>&1`
 end
