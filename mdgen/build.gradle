@@ -16,7 +16,7 @@ repositories {
 }
 
 dependencies {
-  implementation 'info.picocli:picocli:3.9.3',
+  implementation 'info.picocli:picocli:4.0.1',
     'org.opensaml:opensaml-core:3.4.0',
     'org.opensaml:opensaml-saml-api:3.4.0',
     'org.opensaml:opensaml-saml-impl:3.4.0',

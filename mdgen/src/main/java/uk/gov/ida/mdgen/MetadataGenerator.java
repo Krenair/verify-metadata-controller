@@ -32,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 import picocli.CommandLine;
+import picocli.CommandLine.ArgGroup;
 import se.litsec.opensaml.utils.ObjectUtils;
 
 import java.io.ByteArrayInputStream;
@@ -95,11 +96,16 @@ public class MetadataGenerator implements Callable<Void> {
     @CommandLine.Option(names = "--hsm-metadata-signing-label", description = "HSM Metadata key label")
     private String hsmMetadataKeyLabel = "private_key";
 
-    @CommandLine.Option(names = "--hsm-saml-signing-cert-file", description = "Public X509 cert for saml signing")
-    private File samlSigningCertFile;
+    @ArgGroup(exclusive = true, multiplicity = "1")
+    SamlSigningCert samlSigningCert;
 
-    @CommandLine.Option(names = "--supplied-saml-signing-cert-file", description = "File containing the cert to insert")
-    private File embedSamlSigningCert;
+    static class SamlSigningCert {
+        @CommandLine.Option(names = "--hsm-saml-signing-cert-file", description = "Public X509 cert for saml signing")
+        private static File samlSigningCertFile;
+
+        @CommandLine.Option(names = "--supplied-saml-signing-cert-file", description = "File containing the cert to insert")
+        private static File embedSamlSigningCert;
+    }
 
     @CommandLine.Option(names = "--supplied-saml-encryption-cert-file", description = "File containing the cert to insert")
     private File embedSamlEncryptionCert;
@@ -115,8 +121,8 @@ public class MetadataGenerator implements Callable<Void> {
             Security.addProvider(new BouncyCastleProvider());
         }
 
-        if (samlSigningCertFile != null) {
-            X509Certificate samlSigningCert = X509Support.decodeCertificate(samlSigningCertFile);
+        if (SamlSigningCert.samlSigningCertFile != null) {
+            X509Certificate samlSigningCert = X509Support.decodeCertificate(SamlSigningCert.samlSigningCertFile);
             samlSigningCredential = getSigningCredentialFromCloudHSM(samlSigningCert, hsmSigningKeyLabel);
         }
 
@@ -203,8 +209,8 @@ public class MetadataGenerator implements Callable<Void> {
         switch (nodeType) {
             case connector:
                 SPSSODescriptor spSso = entityDescriptor.getSPSSODescriptor(SAMLConstants.SAML20P_NS);
-                if (embedSamlSigningCert != null) {
-                    X509Certificate cer = X509Support.decodeCertificate(embedSamlSigningCert);
+                if (SamlSigningCert.embedSamlSigningCert != null) {
+                    X509Certificate cer = X509Support.decodeCertificate(SamlSigningCert.embedSamlSigningCert);
                     BasicX509Credential credential = new BasicX509Credential(cer);
                     spSso.getKeyDescriptors().add(buildKeyDescriptor(UsageType.SIGNING, credential));
 

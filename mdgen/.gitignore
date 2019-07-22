@@ -7,3 +7,4 @@ out/
 .DS_Store
 
 docker/integration_tests/mdgen/
+docker/test
