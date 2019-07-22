@@ -38,3 +38,8 @@ dependencies {
     'junit:junit:4.12'
 
 }
+
+task runDockerTests(dependsOn: build, type: Exec) {
+    workingDir "$projectDir/docker"
+    commandLine './launch-docker.bash'
+}

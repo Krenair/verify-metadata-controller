@@ -20,9 +20,18 @@ When("I run the java executable with some appropriate parameters") do
   @last_output = run_app("proxy", "rsa")
 end
 
+When("I request some signed something") do
+  pending # Write code here that turns the phrase above into concrete actions
+end
+
 Then("I see that the application complains about missing parameters") do
   expect(@last_output).to include "required parameters"
 end
+
+Then("I get a signed something") do
+  pending # Write code here that turns the phrase above into concrete actions
+end
+
 
 private
 def run_app(node_type, algorithm)
