@@ -37,13 +37,17 @@ import se.litsec.opensaml.utils.ObjectUtils;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.io.StringWriter;
 import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.Provider;
+import java.security.PublicKey;
 import java.security.Security;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.ECPublicKey;
 import java.util.Map;
@@ -93,6 +97,12 @@ public class MetadataGenerator implements Callable<Void> {
 
     @CommandLine.Option(names = "--hsm-metadata-signing-label", description = "HSM Metadata key label")
     private String hsmMetadataKeyLabel = "private_key";
+
+    @CommandLine.Option(names = "--embed-saml-signing-cert-file", description = "File containing the cert to insert")
+    private File embedSamlSigningCert;
+
+    @CommandLine.Option(names = "--embed-saml-encryption-cert-file", description = "File containing the cert to insert")
+    private File embedSamlEncryptionCert;
 
     public static void main(String[] args) throws InitializationException {
         InitializationService.initialize();
@@ -185,13 +195,33 @@ public class MetadataGenerator implements Callable<Void> {
         SignatureValidator.validate(entityDescriptor.getSignature(), metadataSigningCredential);
     }
 
-    private void updateSsoDescriptor(EntityDescriptor entityDescriptor) throws SecurityException {
+    private void updateSsoDescriptor(EntityDescriptor entityDescriptor) throws SecurityException, FileNotFoundException, CertificateException {
         switch (nodeType) {
             case connector:
                 SPSSODescriptor spSso = entityDescriptor.getSPSSODescriptor(SAMLConstants.SAML20P_NS);
-                spSso.getKeyDescriptors().add(buildKeyDescriptor(UsageType.SIGNING, samlSigningCredential));
-                // TODO use a separate encryption cert
-                spSso.getKeyDescriptors().add(buildKeyDescriptor(UsageType.ENCRYPTION, samlSigningCredential));
+                if (embedSamlSigningCert != null) {
+                    CertificateFactory fact = CertificateFactory.getInstance("X.509");
+                    FileInputStream is = new FileInputStream (embedSamlSigningCert);
+                    X509Certificate cer = (X509Certificate) fact.generateCertificate(is);
+                    BasicX509Credential credential = new BasicX509Credential(cer);
+                    spSso.getKeyDescriptors().add(buildKeyDescriptor(UsageType.SIGNING, credential));
+
+                } else {
+                    spSso.getKeyDescriptors().add(buildKeyDescriptor(UsageType.SIGNING, samlSigningCredential));
+                }
+
+                if (embedSamlEncryptionCert != null) {
+                    CertificateFactory fact = CertificateFactory.getInstance("X.509");
+                    FileInputStream is = new FileInputStream (embedSamlEncryptionCert);
+                    X509Certificate cer = (X509Certificate) fact.generateCertificate(is);
+                    BasicX509Credential credential = new BasicX509Credential(cer);
+                    spSso.getKeyDescriptors().add(buildKeyDescriptor(UsageType.ENCRYPTION, credential));
+
+                } else {
+                    // TODO use a separate encryption cert
+                    spSso.getKeyDescriptors().add(buildKeyDescriptor(UsageType.ENCRYPTION, samlSigningCredential));
+                }
+
                 break;
 
             case proxy:
