@@ -98,10 +98,10 @@ public class MetadataGenerator implements Callable<Void> {
     @CommandLine.Option(names = "--hsm-metadata-signing-label", description = "HSM Metadata key label")
     private String hsmMetadataKeyLabel = "private_key";
 
-    @CommandLine.Option(names = "--embed-saml-signing-cert-file", description = "File containing the cert to insert")
+    @CommandLine.Option(names = "--supplied-saml-signing-cert-file", description = "File containing the cert to insert")
     private File embedSamlSigningCert;
 
-    @CommandLine.Option(names = "--embed-saml-encryption-cert-file", description = "File containing the cert to insert")
+    @CommandLine.Option(names = "--supplied-saml-encryption-cert-file", description = "File containing the cert to insert")
     private File embedSamlEncryptionCert;
 
     public static void main(String[] args) throws InitializationException {
