@@ -80,10 +80,7 @@ public class MetadataGenerator implements Callable<Void> {
     @CommandLine.Parameters(index = "1", description = "YAML definition file")
     private File yamlFile;
 
-    @CommandLine.Parameters(index = "2", description = "Public X509 cert for saml signing")
-    private File samlSigningCertFile;
-
-    @CommandLine.Parameters(index = "3", description = "Public X509 cert for metadata signing")
+    @CommandLine.Parameters(index = "2", description = "Public X509 cert for metadata signing")
     private File metadataSigningCertFile;
 
     @CommandLine.Option(names = "--output", description = "Output metadata file")
@@ -98,6 +95,9 @@ public class MetadataGenerator implements Callable<Void> {
     @CommandLine.Option(names = "--hsm-metadata-signing-label", description = "HSM Metadata key label")
     private String hsmMetadataKeyLabel = "private_key";
 
+    @CommandLine.Option(names = "--hsm-saml-signing-cert-file", description = "Public X509 cert for saml signing")
+    private File samlSigningCertFile;
+
     @CommandLine.Option(names = "--supplied-saml-signing-cert-file", description = "File containing the cert to insert")
     private File embedSamlSigningCert;
 
@@ -111,15 +111,19 @@ public class MetadataGenerator implements Callable<Void> {
 
     @Override
     public Void call() throws Exception {
-        X509Certificate samlSigningCert = X509Support.decodeCertificate(samlSigningCertFile);
-        X509Certificate metadataSigningCert = X509Support.decodeCertificate(metadataSigningCertFile);
-
         if (signingAlgo == SigningAlgoType.rsapss) {
             Security.addProvider(new BouncyCastleProvider());
         }
 
+        if (samlSigningCertFile != null) {
+            X509Certificate samlSigningCert = X509Support.decodeCertificate(samlSigningCertFile);
+            samlSigningCredential = getSigningCredentialFromCloudHSM(samlSigningCert, hsmSigningKeyLabel);
+        }
+
+        X509Certificate metadataSigningCert = X509Support.decodeCertificate(metadataSigningCertFile);
+
         setSecurityProvider();
-        samlSigningCredential = getSigningCredentialFromCloudHSM(samlSigningCert, hsmSigningKeyLabel);
+
         metadataSigningCredential = getSigningCredentialFromCloudHSM(metadataSigningCert, hsmMetadataKeyLabel);
 
         if (metadataSigningCredential.getPublicKey() instanceof ECPublicKey) {
@@ -195,14 +199,12 @@ public class MetadataGenerator implements Callable<Void> {
         SignatureValidator.validate(entityDescriptor.getSignature(), metadataSigningCredential);
     }
 
-    private void updateSsoDescriptor(EntityDescriptor entityDescriptor) throws SecurityException, FileNotFoundException, CertificateException {
+    private void updateSsoDescriptor(EntityDescriptor entityDescriptor) throws SecurityException, CertificateException {
         switch (nodeType) {
             case connector:
                 SPSSODescriptor spSso = entityDescriptor.getSPSSODescriptor(SAMLConstants.SAML20P_NS);
                 if (embedSamlSigningCert != null) {
-                    CertificateFactory fact = CertificateFactory.getInstance("X.509");
-                    FileInputStream is = new FileInputStream (embedSamlSigningCert);
-                    X509Certificate cer = (X509Certificate) fact.generateCertificate(is);
+                    X509Certificate cer = X509Support.decodeCertificate(embedSamlSigningCert);
                     BasicX509Credential credential = new BasicX509Credential(cer);
                     spSso.getKeyDescriptors().add(buildKeyDescriptor(UsageType.SIGNING, credential));
 
@@ -211,9 +213,7 @@ public class MetadataGenerator implements Callable<Void> {
                 }
 
                 if (embedSamlEncryptionCert != null) {
-                    CertificateFactory fact = CertificateFactory.getInstance("X.509");
-                    FileInputStream is = new FileInputStream (embedSamlEncryptionCert);
-                    X509Certificate cer = (X509Certificate) fact.generateCertificate(is);
+                    X509Certificate cer = X509Support.decodeCertificate(embedSamlEncryptionCert);
                     BasicX509Credential credential = new BasicX509Credential(cer);
                     spSso.getKeyDescriptors().add(buildKeyDescriptor(UsageType.ENCRYPTION, credential));
 
